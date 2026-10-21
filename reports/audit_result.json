@@ -559,8 +559,8 @@
     }
   },
   "checklist": {
-    "score": 100.0,
-    "earned": 7,
+    "score": 71.4,
+    "earned": 5,
     "total": 7,
     "items": [
       {
@@ -607,20 +607,20 @@
         "id": "protection",
         "principle": "Protection & Reinforcement of Positive Human Values",
         "question": "Does the system reinforce positive societal values and avoid harm?",
-        "response": "Yes",
-        "status": "pass",
+        "response": "No",
+        "status": "gap",
         "evidence": ""
       },
       {
         "id": "inclusion",
         "principle": "Inclusion & Accessibility",
         "question": "Is the system accessible and inclusive across diverse user groups?",
-        "response": "Yes",
-        "status": "pass",
+        "response": "No",
+        "status": "gap",
         "evidence": ""
       }
     ],
-    "status": "good"
+    "status": "needs_review"
   },
   "risk_flags": [
     {
@@ -3185,6 +3185,18 @@
       ],
       "references": [
         "Fairlearn \u2014 ThresholdOptimizer"
+      ]
+    },
+    {
+      "severity": "medium",
+      "title": "Close Governance Checklist Gaps",
+      "actions": [
+        "Assign a named accountable owner for each unanswered principle.",
+        "Document evidence artefacts (test reports, privacy impact assessments, monitoring dashboards) and attach them to the checklist.",
+        "Schedule a governance review before deployment."
+      ],
+      "references": [
+        "NITI Aayog Responsible AI Principles (2021)"
       ]
     }
   ],
