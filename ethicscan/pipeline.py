@@ -6,7 +6,7 @@ from sklearn.metrics import accuracy_score
 from .validation import validate_inputs, impute_for_model
 from .fairness import audit_fairness, risk_flags
 from .explainability import explain_local, explain_global
-from .checklist import score_checklist
+from .checklist import score_checklist, auto_check_checklist
 from .recommendations import generate_recommendations
 from .audit_log import log_audit
 from .reporting import generate_html, generate_pdf
@@ -20,8 +20,6 @@ def run_audit(
     output_dir: str | Path = "reports",
     sample_index: int = 0,
     evidence: dict | None = None,
-    reviewer_name: str = "",
-    reviewer_comments: str = "",
 ) -> dict:
     model_features = list(getattr(model, "feature_names_in_", [])) or [c for c in df.columns if c != target]
     validation = validate_inputs(df, target, [sensitive_attribute], model_features)
@@ -30,18 +28,25 @@ def run_audit(
     y = clean[target]
     predictions = model.predict(X)
     fairness = audit_fairness(y, predictions, clean[sensitive_attribute])
-    checklist = score_checklist(checklist_responses, evidence)
     flags = risk_flags(fairness)
-    result = {
-        "validation": validation.to_dict(),
+    # Build partial result so auto_check can inspect it
+    sensitive_in_features = sensitive_attribute in model_features
+    partial = {
+        "validation": {**validation.to_dict(), "sensitive_in_features": sensitive_in_features},
         "accuracy": float(accuracy_score(y, predictions)),
         "fairness": fairness,
-        "checklist": checklist,
         "risk_flags": flags,
-        "explainability": explain_local(model, X, sample_index=sample_index),
         "global_explainability": explain_global(model, X),
+    }
+    # Auto-infer checklist responses if none provided
+    if not checklist_responses:
+        checklist_responses, evidence = auto_check_checklist(partial)
+    checklist = score_checklist(checklist_responses, evidence)
+    result = {
+        **partial,
+        "checklist": checklist,
+        "explainability": explain_local(model, X, sample_index=sample_index),
         "recommendations": generate_recommendations(flags, checklist),
-        "reviewer": {"name": reviewer_name, "comments": reviewer_comments, "approved": False},
     }
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)

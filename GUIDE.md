@@ -4,23 +4,30 @@
 
 1. Download and unzip the project.
 2. Open VS Code.
-3. Select **File → Open Folder** and choose the `ethicscan_phase1` folder.
+3. Select **File → Open Folder** and choose the `EthicScan` folder.
 4. Open **Terminal → New Terminal**.
 5. Confirm the terminal is inside the project folder. You should see files such as `app.py`, `requirements.txt`, and `ethicscan/`.
 
 ## B. Create the Python environment
 
-Use the command for your operating system.
+Use the command for your operating system. Python 3.11 or later is required (tested on Python 3.13).
 
 **Windows PowerShell**
 ```powershell
-py -m venv .venv
+python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
-If PowerShell blocks activation, run this once in an Administrator PowerShell or use Command Prompt:
+If PowerShell blocks activation, run this once first:
 ```powershell
-Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+If you previously created a `.venv` with a Python version that has since been removed, delete it and recreate:
+```powershell
+Remove-Item -Recurse -Force .venv
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
 **macOS/Linux**
@@ -60,7 +67,7 @@ Expected result: all tests pass. The tests cover missing-value detection, fairne
 streamlit run app.py
 ```
 
-1. Open the local URL printed in the terminal.
+1. Open the local URL printed in the terminal (normally `http://localhost:8501`).
 2. Upload `sample_data/ethicscan_demo_model.joblib`.
 3. Upload `sample_data/ethicscan_demo.csv`.
 4. Select target column `approved`.
@@ -77,7 +84,7 @@ Generated files also appear in the local `reports/` folder.
 
 ### Suggested 7-minute demonstration
 
-1. **Problem (45 seconds):** “A model can be accurate but still produce unequal outcomes or be difficult to explain. EthicScan is an audit aid that checks these risks.”
+1. **Problem (45 seconds):** "A model can be accurate but still produce unequal outcomes or be difficult to explain. EthicScan is an audit aid that checks these risks."
 2. **Architecture (60 seconds):** Show `User inputs → validation → fairness engine + SHAP engine + checklist → risk flags → report`.
 3. **Inputs (60 seconds):** Show the model file, CSV, target column, sensitive attribute, and checklist.
 4. **Validation (45 seconds):** Point out the generated missing values in the demo CSV and explain that the pipeline reports them and imputes values for prediction.
@@ -108,7 +115,7 @@ Untick all checklist items and rerun. The checklist score should fall to 0%, dem
 
 ## H. How to explain the code
 
-- `app.py` is the front end.
+- `app.py` is the front end. Calls `data_file.seek(0)` before the main CSV read to reset the Streamlit upload cursor after the sidebar preview.
 - `pipeline.py` coordinates the engines.
 - `validation.py` checks the input contract.
 - `fairness.py` computes group metrics and flags threshold breaches.

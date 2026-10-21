@@ -15,7 +15,8 @@
     "missing_columns": [],
     "messages": [
       "Missing values detected; numeric values will be median-imputed and categorical values mode-imputed."
-    ]
+    ],
+    "sensitive_in_features": true
   },
   "accuracy": 0.7458333333333333,
   "fairness": {
@@ -558,70 +559,6 @@
       }
     }
   },
-  "checklist": {
-    "score": 71.4,
-    "earned": 5,
-    "total": 7,
-    "items": [
-      {
-        "id": "safety",
-        "principle": "Safety & Reliability",
-        "question": "Are safety tests and failure monitoring documented?",
-        "response": "Yes",
-        "status": "pass",
-        "evidence": ""
-      },
-      {
-        "id": "equality",
-        "principle": "Equality & Non-Discrimination",
-        "question": "Have relevant demographic groups been considered in evaluation?",
-        "response": "Yes",
-        "status": "pass",
-        "evidence": ""
-      },
-      {
-        "id": "privacy",
-        "principle": "Privacy & Security",
-        "question": "Are personal data handling and access controls documented?",
-        "response": "Yes",
-        "status": "pass",
-        "evidence": ""
-      },
-      {
-        "id": "transparency",
-        "principle": "Transparency",
-        "question": "Can users understand the model's purpose and limitations?",
-        "response": "Yes",
-        "status": "pass",
-        "evidence": ""
-      },
-      {
-        "id": "accountability",
-        "principle": "Accountability",
-        "question": "Is an accountable owner or reviewer assigned?",
-        "response": "Yes",
-        "status": "pass",
-        "evidence": ""
-      },
-      {
-        "id": "protection",
-        "principle": "Protection & Reinforcement of Positive Human Values",
-        "question": "Does the system reinforce positive societal values and avoid harm?",
-        "response": "No",
-        "status": "gap",
-        "evidence": ""
-      },
-      {
-        "id": "inclusion",
-        "principle": "Inclusion & Accessibility",
-        "question": "Is the system accessible and inclusive across diverse user groups?",
-        "response": "No",
-        "status": "gap",
-        "evidence": ""
-      }
-    ],
-    "status": "needs_review"
-  },
   "risk_flags": [
     {
       "severity": "high",
@@ -644,34 +581,6 @@
       "message": "Equalized odds gap is 1.000, exceeding 0.10."
     }
   ],
-  "explainability": {
-    "sample_index": 0,
-    "prediction": "1",
-    "base_value": -0.042307398979097854,
-    "method": "SHAP",
-    "attributions": [
-      {
-        "feature": "income",
-        "value": 1.4303462223574532
-      },
-      {
-        "feature": "education_num",
-        "value": 1.1105956720767443
-      },
-      {
-        "feature": "experience",
-        "value": -0.8377745607093778
-      },
-      {
-        "feature": "gender",
-        "value": -0.49875377888581046
-      },
-      {
-        "feature": "age",
-        "value": 0.10898398735216269
-      }
-    ]
-  },
   "global_explainability": {
     "method": "SHAP",
     "summary": [
@@ -3134,6 +3043,98 @@
       }
     ]
   },
+  "checklist": {
+    "score": 28.6,
+    "earned": 2,
+    "total": 7,
+    "items": [
+      {
+        "id": "safety",
+        "principle": "Safety & Reliability",
+        "question": "Are safety tests and failure monitoring documented?",
+        "response": "No",
+        "status": "gap",
+        "evidence": "Model accuracy 74.6%; high-severity flags present"
+      },
+      {
+        "id": "equality",
+        "principle": "Equality & Non-Discrimination",
+        "question": "Have relevant demographic groups been considered in evaluation?",
+        "response": "No",
+        "status": "gap",
+        "evidence": "4 fairness flag(s) detected"
+      },
+      {
+        "id": "privacy",
+        "principle": "Privacy & Security",
+        "question": "Are personal data handling and access controls documented?",
+        "response": "No",
+        "status": "gap",
+        "evidence": "Sensitive attribute appears in model features"
+      },
+      {
+        "id": "transparency",
+        "principle": "Transparency",
+        "question": "Can users understand the model's purpose and limitations?",
+        "response": "Yes",
+        "status": "pass",
+        "evidence": "SHAP global explanations available"
+      },
+      {
+        "id": "accountability",
+        "principle": "Accountability",
+        "question": "Is an accountable owner or reviewer assigned?",
+        "response": "No",
+        "status": "gap",
+        "evidence": "Requires manual assignment of an accountable owner"
+      },
+      {
+        "id": "protection",
+        "principle": "Protection & Reinforcement of Positive Human Values",
+        "question": "Does the system reinforce positive societal values and avoid harm?",
+        "response": "No",
+        "status": "gap",
+        "evidence": "1 high-severity flag(s) detected"
+      },
+      {
+        "id": "inclusion",
+        "principle": "Inclusion & Accessibility",
+        "question": "Is the system accessible and inclusive across diverse user groups?",
+        "response": "Yes",
+        "status": "pass",
+        "evidence": "40 group(s) found in sensitive attribute: 24, 51, 47, 38, 55, 48, 29, 42, 60, 50, 49, 52, 41, 26, 54, 39, 35, 28, 58, 46, 37, 53, 30, 43, 56, 23, 32, 27, 59, 40, 22, 57, 34, 33, 36, 21, 25, 45, 31, 44"
+      }
+    ],
+    "status": "needs_review"
+  },
+  "explainability": {
+    "sample_index": 0,
+    "prediction": "1",
+    "base_value": -0.042307398979097854,
+    "method": "SHAP",
+    "attributions": [
+      {
+        "feature": "income",
+        "value": 1.4303462223574532
+      },
+      {
+        "feature": "education_num",
+        "value": 1.1105956720767443
+      },
+      {
+        "feature": "experience",
+        "value": -0.8377745607093778
+      },
+      {
+        "feature": "gender",
+        "value": -0.49875377888581046
+      },
+      {
+        "feature": "age",
+        "value": 0.10898398735216269
+      }
+    ]
+  },
   "recommendations": [
     {
       "severity": "high",
@@ -3199,10 +3200,5 @@
         "NITI Aayog Responsible AI Principles (2021)"
       ]
     }
-  ],
-  "reviewer": {
-    "name": "",
-    "comments": "",
-    "approved": false
-  }
+  ]
 }

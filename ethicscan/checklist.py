@@ -11,6 +11,41 @@ DEFAULT_CHECKLIST = [
     {"id": "inclusion", "principle": "Inclusion & Accessibility", "question": "Is the system accessible and inclusive across diverse user groups?"},
 ]
 
+def auto_check_checklist(audit_result: dict) -> dict[str, Any]:
+    """Infer checklist responses from audit data. Returns {id: bool} responses and {id: reason} evidence."""
+    fairness   = audit_result.get("fairness", {})
+    flags      = audit_result.get("risk_flags", [])
+    global_exp = audit_result.get("global_explainability", {})
+    accuracy   = audit_result.get("accuracy", 0.0)
+    validation = audit_result.get("validation", {})
+
+    high_flags   = [f for f in flags if f.get("severity") == "high"]
+    any_breach   = len(flags) > 0
+    shap_avail   = bool(global_exp.get("summary"))
+    groups       = fairness.get("groups", [])
+    sensitive_in_features = validation.get("sensitive_in_features", False)
+
+    responses = {
+        "safety":        accuracy >= 0.60 and not high_flags,
+        "equality":      not any_breach,
+        "privacy":       not sensitive_in_features,
+        "transparency":  shap_avail,
+        "accountability": False,   # always requires a human owner
+        "protection":    not high_flags,
+        "inclusion":     len(groups) > 1,
+    }
+    evidence = {
+        "safety":        f"Model accuracy {accuracy:.1%}" + ("; high-severity flags present" if high_flags else "; no high-severity flags"),
+        "equality":      "No fairness threshold breaches" if not any_breach else f"{len(flags)} fairness flag(s) detected",
+        "privacy":       "Sensitive attribute not used as model feature" if not sensitive_in_features else "Sensitive attribute appears in model features",
+        "transparency":  "SHAP global explanations available" if shap_avail else "SHAP unavailable for this model type",
+        "accountability": "Requires manual assignment of an accountable owner",
+        "protection":    "No high-severity flags" if not high_flags else f"{len(high_flags)} high-severity flag(s) detected",
+        "inclusion":     f"{len(groups)} group(s) found in sensitive attribute: {', '.join(str(g) for g in groups)}",
+    }
+    return responses, evidence
+
+
 def score_checklist(responses: dict[str, Any], evidence: dict[str, str] | None = None, checklist=DEFAULT_CHECKLIST) -> dict[str, Any]:
     evidence = evidence or {}
     items = []

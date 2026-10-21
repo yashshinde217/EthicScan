@@ -19,8 +19,8 @@ EthicScan is a local Streamlit prototype for auditing a trained machine-learning
 
 ### Windows PowerShell
 ```powershell
-cd path\to\ethicscan_phase1
-py -m venv .venv
+cd path\to\EthicScan
+python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -r requirements.txt
@@ -29,9 +29,14 @@ pytest -q
 streamlit run app.py
 ```
 
+If PowerShell blocks activation, run this once first:
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
 ### macOS/Linux
 ```bash
-cd /path/to/ethicscan_phase1
+cd /path/to/EthicScan
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
@@ -48,6 +53,11 @@ Open the URL shown by Streamlit, normally `http://localhost:8501`. Upload:
 
 Choose `approved` as target and `gender` as sensitive attribute, answer the checklist, then click **Run EthicScan audit**.
 
+## Requirements
+
+- Python 3.11 or later (tested on Python 3.13)
+- Dependencies listed in `requirements.txt`
+
 ## Thresholds used in Phase 1
 
 - Disparate impact ratio `< 0.80`: high-severity potential adverse-impact flag
@@ -55,3 +65,7 @@ Choose `approved` as target and `gender` as sensitive attribute, answer the chec
 - Absolute equal opportunity difference `> 0.10`: medium-severity flag
 
 These are screening thresholds and must be interpreted in context.
+
+## Known issues fixed
+
+- `app.py`: `data_file.seek(0)` is called before the second `pd.read_csv` to reset the Streamlit `UploadedFile` cursor, which is exhausted after the sidebar preview read.
