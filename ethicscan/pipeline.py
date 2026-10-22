@@ -24,7 +24,9 @@ def run_audit(
     model_features = list(getattr(model, "feature_names_in_", [])) or [c for c in df.columns if c != target]
     validation = validate_inputs(df, target, [sensitive_attribute], model_features)
     clean = impute_for_model(df)
-    X = clean[model_features]
+    X = clean[model_features].copy()
+    for col in X.select_dtypes(include="object").columns:
+        X[col] = pd.factorize(X[col])[0]
     y = clean[target]
     predictions = model.predict(X)
     fairness = audit_fairness(y, predictions, clean[sensitive_attribute])

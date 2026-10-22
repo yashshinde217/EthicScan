@@ -96,8 +96,8 @@ _DARK = dict(
     margin=dict(l=0, r=0, t=30, b=0),
 )
 
-SAMPLE_MODEL = Path("sample_data/ethicscan_demo_model.joblib")
-SAMPLE_CSV   = Path("sample_data/ethicscan_demo.csv")
+SAMPLE_MODEL = Path("sample_data/loan_good_model.joblib")
+SAMPLE_CSV   = Path("sample_data/loan_good.csv")
 
 # ── Session state defaults ────────────────────────────────────────────────────
 for k, v in {"step": 1, "result": None, "responses": {}, "evidence": {}, "sample_row": 0}.items():
@@ -208,9 +208,11 @@ if step == 2:
                               df_preview.columns,
                               index=list(df_preview.columns).index("approved") if "approved" in df_preview.columns else 0)
     with c2:
+        _sens_cols = [c for c in df_preview.columns if c != target]
+        _sens_default = _sens_cols.index("gender") if "gender" in _sens_cols else 0
         sensitive = st.selectbox("Sensitive attribute (group to check for fairness)",
-                                 [c for c in df_preview.columns if c != target],
-                                 index=0)
+                                 _sens_cols,
+                                 index=_sens_default)
 
     with st.expander("⚙ Advanced options"):
         thresh_di  = st.slider("Selection rate ratio threshold (flag below)", 0.5, 1.0, 0.80, 0.01,
@@ -251,6 +253,7 @@ if step == 2:
                 st.session_state["result"]    = result
                 st.session_state["target"]    = target
                 st.session_state["sensitive"]  = sensitive
+                st.session_state["model_obj"]  = model
                 # Seed checkboxes from auto-detected responses
                 auto_resp, auto_ev = auto_check_checklist(result)
                 st.session_state["responses"] = auto_resp
@@ -333,7 +336,7 @@ if step == 3:
 
         if flags:
             st.markdown('<div class="section-title">Top issues</div>', unsafe_allow_html=True)
-            for flag in flags[:3]:
+            for flag in flags:
                 sev  = flag["severity"]
                 key  = flag.get("metric", "")
                 plain = _PLAIN.get(key, lambda v: flag["message"])(fairness.get(key, 0))
@@ -440,8 +443,18 @@ if step == 3:
             ))
             fig_shap.update_layout(height=max(260, len(feat_names) * 34), xaxis_title="Mean |SHAP|", **_DARK)
             st.plotly_chart(fig_shap, use_container_width=True)
-        else:
-            st.info("Global SHAP unavailable for this model type.")
+            # Plain-English explanation
+            top = summary[:3]
+            lines = []
+            for s in top:
+                pct = s['mean_abs_shap']
+                lines.append(f"**{s['feature']}** has the largest average influence on predictions (mean |SHAP| = {pct:.4f}).")
+            st.markdown(
+                "**What this means:** " + " ".join(lines) +
+                " A higher mean |SHAP| value means that feature pushes the model's output further from its baseline on average — "
+                "either toward approval or rejection. Features near zero have little effect on the model's decisions.",
+                unsafe_allow_html=False,
+            )
 
         st.markdown('<div class="section-title">Explain one prediction</div>', unsafe_allow_html=True)
         use_sample2 = st.session_state.get("use_sample", False)
@@ -454,15 +467,26 @@ if step == 3:
                                   max_value=max(0, len(df_exp) - 1),
                                   value=st.session_state["sample_row"],
                                   key="row_picker")
-        if row_idx != st.session_state["sample_row"]:
-            st.session_state["sample_row"] = int(row_idx)
 
-        attrs = local_exp.get("attributions", [])
-        pred_val = local_exp.get("prediction", "-")
-        base_val = local_exp.get("base_value", 0)
+        # ── Rebuild X the same way pipeline.py does, then call explain_local live ──
+        from ethicscan.explainability import explain_local as _explain_local
+        from ethicscan.validation import impute_for_model as _impute
+        _model   = st.session_state.get("model_obj")
+        _target  = st.session_state.get("target", result.get("validation", {}).get("target", ""))
+        _features = list(getattr(_model, "feature_names_in_", [])) or [c for c in df_exp.columns if c != _target]
+        _clean   = _impute(df_exp)
+        _X       = _clean[_features].copy()
+        for _col in _X.select_dtypes(include="object").columns:
+            _X[_col] = pd.factorize(_X[_col])[0]
+
+        local_live = _explain_local(_model, _X, sample_index=int(row_idx))
+        attrs    = local_live["attributions"]
+        pred_val = local_live["prediction"]
+        base_val = local_live["base_value"]
+
         st.markdown(f"Prediction: **`{pred_val}`** &nbsp;·&nbsp; Base value: `{base_val:.4f}`")
         if attrs:
-            bar_colors = ["#f85149" if v > 0 else "#38bdf8" for v in [a["value"] for a in attrs]]
+            bar_colors = ["#f85149" if a["value"] > 0 else "#38bdf8" for a in attrs]
             attr_df    = pd.DataFrame(attrs)
             fig_local  = go.Figure(go.Bar(
                 x=attr_df["value"], y=attr_df["feature"], orientation="h",
@@ -472,6 +496,18 @@ if step == 3:
             fig_local.add_vline(x=0, line_color="#30363d", line_width=1)
             fig_local.update_layout(height=max(240, len(attrs) * 32), xaxis_title="SHAP attribution", **_DARK)
             st.plotly_chart(fig_local, use_container_width=True)
+            # Plain-English explanation
+            pos = [a for a in attrs if a["value"] > 0]
+            neg = [a for a in attrs if a["value"] < 0]
+            push_toward = ", ".join(a["feature"] for a in pos[:2]) if pos else "none"
+            push_away   = ", ".join(a["feature"] for a in neg[:2]) if neg else "none"
+            st.markdown(
+                f"**What this means for row {int(row_idx)}:** "
+                f"The model predicted **{pred_val}**. "
+                f"Features pushing *toward* this outcome: {push_toward}. "
+                f"Features pushing *against* this outcome: {push_away}. "
+                "Red bars increase the prediction score; blue bars decrease it."
+            )
 
         dep_data = global_exp.get("dependency", [])[:3]
         if dep_data:
